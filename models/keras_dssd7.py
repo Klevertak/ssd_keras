@@ -29,6 +29,7 @@ from keras_layers.keras_layer_DecodeDetections import DecodeDetections
 from keras_layers.keras_layer_DecodeDetectionsFast import DecodeDetectionsFast
 
 
+
 def _deconv_module(feature_layer, deconv_layer, name, feature_size=512):
     # deconv1 = Conv2DTranspose(feature_size, kernel_size=(2,2),
     #                                        strides=(2, 2), name=name+'Transpose1', padding='same')(deconv_layer)
@@ -36,7 +37,7 @@ def _deconv_module(feature_layer, deconv_layer, name, feature_size=512):
     # deconv1 = UpSampling2D(size=(2, 2), name=name+'upsampled')(deconv_layer)
 
     # filter_shape = K.stack([1, 2,2, deconv_layer.shape[3]])
-    deconv_filter = Lambda(lambda x_shape: K.variable(K.random_normal(K.stack([1, 2,2, deconv_layer.shape[3]])), name='kernel'))(deconv_layer)
+    deconv_filter = Lambda(lambda x_shape: K.variable(K.random_normal(K.stack([2,2, feature_size, deconv_layer.shape[3]])), name='kernel'))(deconv_layer)
 
     # output_shape = K.stack([K.shape(feature_layer)[0], feature_layer.shape[1], feature_layer.shape[2], feature_size])
     deconv1 = Lambda(lambda x: K.conv2d_transpose(deconv_layer,
