@@ -37,16 +37,16 @@ def _deconv_module(feature_layer, deconv_layer, name, feature_size=512):
     # deconv1 = UpSampling2D(size=(2, 2), name=name+'upsampled')(deconv_layer)
 
     # filter_shape = K.stack([1, 2,2, deconv_layer.shape[3]])
-    deconv_filter = Lambda(lambda x_shape: K.variable(K.random_normal(K.stack([2,2, feature_size, deconv_layer.shape[3]])), name='kernel'))(deconv_layer)
+    deconv_filter = Lambda(lambda x_shape: K.variable(K.random_normal(K.stack([2,2, feature_size, deconv_layer.shape[3]])), name=name+'kernel'))(deconv_layer)
 
     # output_shape = K.stack([K.shape(feature_layer)[0], feature_layer.shape[1], feature_layer.shape[2], feature_size])
     deconv1 = Lambda(lambda x: K.conv2d_transpose(deconv_layer,
                                  deconv_filter,
                                  K.stack([K.shape(x)[0], x.shape[1], x.shape[2], feature_size]),
-                                 (1,2,2,1),
-                                 'same'))(feature_layer)
+                                 (2,2),
+                                 'valid'))(feature_layer)
 
-    conv1 = Conv2D(feature_size, kernel_size=(3,3), strides=(1,1), padding='same', name=name+'Conv1')(deconv1)
+    conv1 = Conv2D(feature_size, kernel_size=(3,3), strides=1, padding='same', name=name+'Conv1')(deconv1)
     bn1 = BatchNormalization(name='bn_1'+name)(conv1)
 
     conv2 = Conv2D(feature_size, kernel_size=(3,3), strides=1, padding='same', name=name+'Conv2')(feature_layer)
@@ -493,7 +493,7 @@ def main():
 
     K.clear_session()  # Clear previous models from memory.
 
-    model = build_dssd7_model(image_size=(img_height, img_width, img_channels),
+    model_dssd = build_dssd7_model(image_size=(img_height, img_width, img_channels),
                         n_classes=n_classes,
                         mode='training',
                         l2_regularization=0.0005,
@@ -509,7 +509,24 @@ def main():
                         subtract_mean=intensity_mean,
                         divide_by_stddev=intensity_range)
 
-    print(model.summary())
+    print(model_dssd.summary())
+
+    from keras.optimizers import Adam
+    from keras_loss_function.keras_ssd_loss import SSDLoss
+
+    adam = Adam(lr=0.001, beta_1=0.9, beta_2=0.999, epsilon=1e-08, decay=0.0)
+
+    ssd_loss = SSDLoss(neg_pos_ratio=3, alpha=1.0)
+
+    model_dssd.compile(optimizer=adam, loss=ssd_loss.compute_loss)
+
+    inputs = np.zeros((1, img_height, img_width, img_channels), dtype=np.float32)
+    # inputs = np.zeros((1, 800, 1333, 3), dtype=np.float32)
+    targets = [np.zeros((1, 11692, 18))]
+
+    inp = Input(inputs[0].shape)
+
+    model_dssd.fit(inputs, targets, batch_size=1)
 
     return 0
 
