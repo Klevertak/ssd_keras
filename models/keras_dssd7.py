@@ -37,14 +37,14 @@ def _deconv_module(feature_layer, deconv_layer, name, feature_size=512):
     # deconv1 = UpSampling2D(size=(2, 2), name=name+'upsampled')(deconv_layer)
 
     # filter_shape = K.stack([1, 2,2, deconv_layer.shape[3]])
-    deconv_filter = Lambda(lambda x_shape: K.variable(K.random_normal(K.stack([2,2, feature_size, deconv_layer.shape[3]])), name=name+'kernel'))(deconv_layer)
+    deconv_filter = Lambda(lambda args: K.variable(K.random_normal(K.stack([2,2, feature_size, args.shape[3]])), name=name+'kernel'))(deconv_layer)
 
     # output_shape = K.stack([K.shape(feature_layer)[0], feature_layer.shape[1], feature_layer.shape[2], feature_size])
-    deconv1 = Lambda(lambda x: K.conv2d_transpose(deconv_layer,
-                                 deconv_filter,
-                                 K.stack([K.shape(feature_layer)[0], feature_layer.shape[1], feature_layer.shape[2], feature_size]),
+    deconv1 = Lambda(lambda args: K.conv2d_transpose(args[0],
+                                 args[2],
+                                 K.stack([K.shape(args[1])[0], args[1].shape[1], args[1].shape[2], feature_size]),
                                  (2,2),
-                                 'valid'))(feature_layer)
+                                 'valid'))([deconv_layer, feature_layer, deconv_filter])
 
     conv1 = Conv2D(feature_size, kernel_size=(3,3), strides=1, padding='same', name=name+'Conv1')(deconv1)
     bn1 = BatchNormalization(name='bn_1'+name)(conv1)
