@@ -42,7 +42,7 @@ def _deconv_module(feature_layer, deconv_layer, name, feature_size=512):
     # output_shape = K.stack([K.shape(feature_layer)[0], feature_layer.shape[1], feature_layer.shape[2], feature_size])
     deconv1 = Lambda(lambda x: K.conv2d_transpose(deconv_layer,
                                  deconv_filter,
-                                 K.stack([K.shape(x)[0], x.shape[1], x.shape[2], feature_size]),
+                                 K.stack([K.shape(feature_layer)[0], feature_layer.shape[1], feature_layer.shape[2], feature_size]),
                                  (2,2),
                                  'valid'))(feature_layer)
 
